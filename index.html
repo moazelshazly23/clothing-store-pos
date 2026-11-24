@@ -64,7 +64,7 @@ const KEY='clothing_pos_v1';
 const TABS=[['sell','البيع'],['products','المنتجات'],['stock','المخزون'],['returns','المرتجع'],['reports','التقارير'],['settings','الإعدادات']];
 const COLORS={'أسود':'#111','أبيض':'#fff','أزرق':'#2a5db0','أحمر':'#c0392b','بيج':'#d9c7a3','رمادي':'#888','أخضر':'#2e7d52','كحلي':'#1b2a4a','بني':'#6b4a2f'};
 let S=load(),tab='sell',cart=[],cartDisc={type:'pct',val:0},q='',lastScan='';
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}return seed()}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s){Object.assign(s.settings,{address:'',slogan:'',logo:'',...s.settings});return s}}catch(e){}return seed()}
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -86,7 +86,7 @@ function seed(){
     const sub=items.reduce((a,i)=>a+i.qty*i.price,0);const d=disc?Math.round(sub*disc/100):0;
     sales.push({id:'s'+no,no:no++,date:new Date(now-daysAgo*864e5-Math.random()*3e7).toISOString(),type:'sale',items,subtotal:sub,discount:d,total:sub-d,method,cashier:'أحمد'})};
   mk(6,[[0,1,2],[1,0,1]],'cash',0);mk(5,[[2,2,1]],'visa',10);mk(5,[[3,1,2],[5,0,1]],'cash',0);mk(4,[[0,4,1],[1,3,1]],'wallet',0);mk(3,[[4,1,1]],'visa',0);mk(3,[[0,0,3]],'cash',5);mk(2,[[1,2,2],[3,3,1]],'cash',0);mk(1,[[2,0,1],[5,2,2]],'wallet',0);mk(1,[[0,2,1]],'cash',0);mk(0,[[1,1,1],[0,3,2]],'cash',0);
-  return{settings:{shop:'محل الأناقة للملابس',cur:'ج.م',low:3,vat:0,phone:'',footer:'شكراً لزيارتكم - الاستبدال خلال 14 يوم بالفاتورة'},products:P,sales,nextBc:bc,nextNo:no,shift:{open:true,start:new Date(now-4*36e5).toISOString(),cashier:'أحمد',openCash:500},shifts:[],nextPid:P.length+1,purchases:[]}
+  return{settings:{shop:'محل الأناقة للملابس',cur:'ج.م',low:3,vat:0,phone:'',address:'',slogan:'',logo:'',footer:'شكراً لزيارتكم - الاستبدال خلال 14 يوم بالفاتورة'},products:P,sales,nextBc:bc,nextNo:no,shift:{open:true,start:new Date(now-4*36e5).toISOString(),cashier:'أحمد',openCash:500},shifts:[],nextPid:P.length+1,purchases:[]}
 }
 function findVar(bc){for(const p of S.products)for(const v of p.variants)if(v.barcode===bc)return[p,v]}
 function stockOf(p){return p.variants.reduce((a,v)=>a+v.qty,0)}
@@ -96,7 +96,7 @@ function barcodeSVG(code){let x=0,out='';const s='*'+code+'*';for(const ch of s)
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${x} 40" preserveAspectRatio="none">${out}</svg>`}
 // ---- UI
 function renderNav(){$('#nav').innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('');
-  $('#shopTitle').textContent=S.settings.shop;$('#shiftInfo').textContent=S.shift.open?`وردية مفتوحة: ${S.shift.cashier} منذ ${fmtT(S.shift.start)}`:'لا توجد وردية مفتوحة'}
+  $('#shopTitle').innerHTML=(S.settings.logo?`<img src="${S.settings.logo}" style="height:34px;vertical-align:middle;margin-left:8px;border-radius:4px;background:#fff">`:'')+esc(S.settings.shop);$('#shiftInfo').textContent=S.shift.open?`وردية مفتوحة: ${S.shift.cashier} منذ ${fmtT(S.shift.start)}`:'لا توجد وردية مفتوحة'}
 function go(t){tab=t;render()}
 function render(){renderNav();({sell:vSell,products:vProducts,stock:vStock,returns:vReturns,reports:vReports,settings:vSettings})[tab]();}
 // SELL
@@ -143,7 +143,7 @@ function checkout(){const t=cartTotals();const method=$('#method').value;const c
   cart.forEach(i=>{findVar(i.barcode)[1].qty-=i.qty});S.sales.push(sale);save();cart=[];cartDisc={type:'pct',val:0};render();showReceipt(sale)}
 const METH={cash:'نقدي',visa:'فيزا',wallet:'فودافون كاش',credit:'آجل'};
 function showReceipt(s){const sign=s.type==='return'?-1:1;
-  modal(`<div id="rcp" class="receipt"><div style="text-align:center"><b>${esc(S.settings.shop)}</b><br>${esc(S.settings.phone)}<br>${s.type==='return'?'إيصال مرتجع':'فاتورة'} رقم ${s.no}<br>${fmtT(s.date)}</div><hr>
+  modal(`<div id="rcp" class="receipt"><div style="text-align:center">${S.settings.logo?`<img src="${S.settings.logo}" style="max-width:140px;max-height:70px;display:block;margin:0 auto 4px">`:''}<b style="font-size:15px">${esc(S.settings.shop)}</b><br>${S.settings.slogan?esc(S.settings.slogan)+'<br>':''}${S.settings.address?esc(S.settings.address)+'<br>':''}${S.settings.phone?'ت: '+esc(S.settings.phone)+'<br>':''}${s.type==='return'?'إيصال مرتجع':'فاتورة'} رقم ${s.no}<br>${fmtT(s.date)}</div><hr>
   ${s.items.map(i=>`<div>${esc(i.name)} (${esc(i.size)}/${esc(i.color)})</div><div class="r"><span>${i.qty} x ${i.price}</span><span>${(i.qty*i.price*sign)}</span></div>`).join('')}<hr>
   <div class="r"><span>المجموع</span><span>${s.subtotal*sign}</span></div>${s.discount?`<div class="r"><span>الخصم</span><span>${s.discount}</span></div>`:''}
   <div class="r"><b>الإجمالي</b><b>${money(s.total*sign)}</b></div><div class="r"><span>الدفع</span><span>${METH[s.method]||s.method}</span></div><hr><div style="text-align:center">${esc(S.settings.footer)}<br>${barcodeSVG(String(s.no))}</div></div>
@@ -223,11 +223,18 @@ function closeShift(){const sg=s=>s.type==='return'?-1:1;const ss=S.sales.filter
 function openShift(){S.shift={open:true,start:new Date().toISOString(),cashier:$('#cn').value||'كاشير',openCash:+$('#oc').value||0};save();render()}
 // SETTINGS
 function vSettings(){const s=S.settings;
-  $('#app').innerHTML=`<div class="card"><h2>إعدادات المحل</h2><div class="row"><input id="sn" value="${esc(s.shop)}" class="grow" placeholder="اسم المحل"><input id="sp" value="${esc(s.phone)}" placeholder="تليفون"></div>
+  $('#app').innerHTML=`<div class="card"><h2>بيانات المحل (بتظهر على الفاتورة)</h2>
+  <div class="row"><div id="logoBox">${s.logo?`<img src="${s.logo}" style="height:70px;border:1px solid var(--line);border-radius:8px;background:#fff">`:'<div class="pill">لا يوجد لوجو</div>'}</div><input type="file" id="lg" accept="image/*" onchange="setLogo(this)"><button class="b gh sm" onclick="S.settings.logo='';save();render()">حذف اللوجو</button></div>
+  <div class="row" style="margin-top:8px"><input id="sn" value="${esc(s.shop)}" class="grow" placeholder="اسم المحل"><input id="sp" value="${esc(s.phone)}" placeholder="تليفون"></div>
+  <div class="row" style="margin-top:8px"><input id="sa" value="${esc(s.address)}" class="grow" placeholder="العنوان"></div>
+  <div class="row" style="margin-top:8px"><input id="ss" value="${esc(s.slogan)}" class="grow" placeholder="الشعار / السلوجان"></div>
+  <div class="row" style="margin-top:8px"><input id="sf" class="grow" value="${esc(s.footer)}" placeholder="جملة ختام الفاتورة"></div>
   <div class="row" style="margin-top:8px"><label>حد تنبيه المخزون</label><input id="sl" type="number" value="${s.low}" style="width:80px"><label>العملة</label><input id="sc" value="${esc(s.cur)}" style="width:80px"></div>
-  <div class="row" style="margin-top:8px"><input id="sf" class="grow" value="${esc(s.footer)}" placeholder="نص أسفل الفاتورة"></div><div style="margin-top:10px"><button class="b ok" onclick="saveSet()">حفظ</button></div></div>
+  <div class="row" style="margin-top:10px"><button class="b ok" onclick="saveSet()">حفظ</button><button class="b gh" onclick="saveSet();previewReceipt()">معاينة الفاتورة</button></div></div>
   <div class="card"><h2>نسخة احتياطية</h2><div class="row"><button class="b" onclick="backup()">تحميل نسخة</button><input type="file" id="rf" accept=".json" onchange="restore(this)"><button class="b acc" onclick="if(confirm('مسح كل البيانات والرجوع لبيانات تجريبية؟')){localStorage.removeItem(KEY);S=seed();save();render()}">إعادة بيانات تجريبية</button><button class="b acc" onclick="if(confirm('مسح كل شيء وبدء محل فاضي؟')){S=seed();S.products=[];S.sales=[];S.nextNo=1001;S.shifts=[];save();render()}">بدء محل فاضي</button></div><p style="color:var(--mut)">البيانات محفوظة على نفس الجهاز والمتصفح. حمّل نسخة احتياطية بشكل دوري.</p></div>`}
-function saveSet(){const s=S.settings;s.shop=$('#sn').value;s.phone=$('#sp').value;s.low=+$('#sl').value;s.cur=$('#sc').value;s.footer=$('#sf').value;save();render()}
+function saveSet(){const s=S.settings;s.shop=$('#sn').value;s.phone=$('#sp').value;s.address=$('#sa').value;s.slogan=$('#ss').value;s.low=+$('#sl').value;s.cur=$('#sc').value;s.footer=$('#sf').value;save();render()}
+function setLogo(el){const f=el.files[0];if(!f)return;const img=new Image(),u=URL.createObjectURL(f);img.onload=()=>{const m=400,k=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);S.settings.logo=c.toDataURL('image/png');save();render()};img.src=u}
+function previewReceipt(){const it=S.products[0];const v=it.variants[0];showReceipt({no:'معاينة',date:new Date().toISOString(),type:'sale',items:[{name:it.name,size:v.size,color:v.color,qty:1,price:it.price,cost:it.cost}],subtotal:it.price,discount:0,total:it.price,method:'cash'})}
 function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='pos-backup-'+today()+'.json';a.click()}
 function restore(el){const f=el.files[0];if(!f)return;f.text().then(t=>{S=JSON.parse(t);save();render()})}
 save();render();
