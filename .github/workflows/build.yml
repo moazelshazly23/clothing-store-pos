@@ -1,10 +1,11 @@
 name: Build Windows installer
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: build-installer
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: windows-latest
@@ -26,5 +27,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete v1.0.0 --yes --cleanup-tag || true
-          gh release create v1.0.0 "dist/Clothing POS Setup 1.0.0.exe" --title "Clothing POS 1.0.0 (Windows installer)" --notes "Windows installer. Run it and follow the steps. Windows may show a SmartScreen warning because the app is not code-signed: More info > Run anyway."
+          gh release delete v2.0.0 --yes --cleanup-tag || true
+          gh release create v2.0.0 "dist/Clothing POS Setup 2.0.0.exe" --title "Clothing POS 2.0.0 (Windows installer)" --notes "Windows installer. Run it and follow the steps. Windows may show a SmartScreen warning because the app is not code-signed: More info > Run anyway."
